@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"ali_eci_exporter/eci"
+	"encoding/json"
 	"github.com/prometheus/client_golang/prometheus"
 	"sync"
 )
@@ -54,7 +55,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 	for _, v := range list {
 		if len(v.Records) > 0 {
-			record := v.Records[len(v.Records)-1]
+			record := v.Records[0]
 			//if len(record.Network.Interfaces) <= 0 {
 			//	continue
 			//}
@@ -100,8 +101,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (e *Exporter) getEciMetricData() ([]eci.DescribeContainerGroupMetricResponse, error) {
-	list := make([]eci.DescribeContainerGroupMetricResponse, 0)
+func (e *Exporter) getEciMetricData() ([]eci.DescribeMultiContainerGroupMetricResponseMonitorData, error) {
+	list := make([]eci.DescribeMultiContainerGroupMetricResponseMonitorData, 0)
 	nextToken := ""
 	for true {
 		request := eci.CreateDescribeContainerGroupsRequest()
@@ -110,17 +111,19 @@ func (e *Exporter) getEciMetricData() ([]eci.DescribeContainerGroupMetricRespons
 		if err != nil {
 			return nil, err
 		}
-		//tmpEci := make([]string, 0)
+		tmpEci := make([]string, 0)
 		for _, v := range result.ContainerGroups {
-			monitorRequest := eci.CreateDescribeContainerGroupMetricRequest()
-			monitorRequest.ContainerGroupId = v.ContainerGroupId
-			monitorResult, err := e.eciClient.DescribeContainerGroupMetric(monitorRequest)
-			if err != nil {
-				return nil, err
-			}
-			list = append(list, *monitorResult)
+			tmpEci = append(tmpEci, v.ContainerGroupId)
 		}
-		////去拿数据
+		//去拿数据
+		monitorRequest := eci.CreateDescribeMultiContainerGroupMetricRequest()
+		eciList, _ := json.Marshal(tmpEci)
+		monitorRequest.ContainerGroupIds = string(eciList)
+		monitorResult, err := e.eciClient.DescribeMultiContainerGroupMetric(monitorRequest)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, monitorResult.MonitorDatas...)
 		nextToken = result.NextToken
 		if result.NextToken == "" {
 			break

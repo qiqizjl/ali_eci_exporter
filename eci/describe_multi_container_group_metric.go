@@ -76,7 +76,7 @@ func (client *Client) DescribeMultiContainerGroupMetricWithCallback(request *Des
 // DescribeMultiContainerGroupMetricRequest is the request struct for api DescribeMultiContainerGroupMetric
 type DescribeMultiContainerGroupMetricRequest struct {
 	*requests.RpcRequest
-	ContainerGroupIds []string `position:"Query" name:"ContainerGroupIds"  type:"Repeated"`
+	ContainerGroupIds string `position:"Query" name:"ContainerGroupIds" `
 }
 
 type DescribeMultiContainerGroupMetricResponseMonitorData struct {
